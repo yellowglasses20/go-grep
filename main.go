@@ -66,10 +66,17 @@ func main() {
 				Row:      5,
 			},
 		},
+		OnDropFiles: mw.dropedFileEvent,
 	}.Run()); err != nil {
 		log.Fatal(err)
 	}
+}
 
+func (mw *MyMainWindow) dropedFileEvent(handle []string) {
+
+	filePath := strings.Join(handle, "")
+	mw.searchFolder.SetText(filePath)
+	mw.path = filePath
 }
 
 func (mw *MyMainWindow) clicked() {
