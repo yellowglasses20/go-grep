@@ -9,3 +9,6 @@ Windows Grep Tool
 
 ## dependency
 - [lxn/walk](https://github.com/lxn/walk)
+
+## image
+![go-grep.PNG](go-grep.PNG)
