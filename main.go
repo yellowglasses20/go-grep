@@ -3,8 +3,10 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/lxn/walk"
@@ -82,9 +84,58 @@ func (mw *MyMainWindow) dropedFileEvent(handle []string) {
 func (mw *MyMainWindow) clicked() {
 	text := mw.searchText.Text()
 	model := []string{}
+	// check directory
+	fInfo, _ := os.Stat(mw.path)
+	if fInfo.IsDir() {
+		fileList := checkDirectory(mw.path)
+		for _, file := range fileList {
+			model = append(model, grep(file, text)...)
+		}
+	} else {
+		model = grep(mw.path, text)
+	}
 
-	// grep
-	file, err := os.Open(mw.path)
+	mw.results.SetModel(model)
+}
+
+func (mw *MyMainWindow) openFolderClicked() {
+	dlg := new(walk.FileDialog)
+	dlg.FilePath = mw.path
+	dlg.Title = "Select File"
+	dlg.Filter = "Exe files All files (*.*)|*.*"
+
+	if ok, err := dlg.ShowOpen(mw); err != nil {
+		//if ok, err := dlg.ShowBrowseFolder(mw); err != nil {
+		return
+	} else if !ok {
+		return
+	}
+	mw.path = dlg.FilePath
+	mw.searchFolder.SetText(mw.path)
+	return
+}
+
+func checkDirectory(dir string) []string {
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+
+	var paths []string
+	for _, file := range files {
+		if file.IsDir() {
+			paths = append(paths, checkDirectory(filepath.Join(dir, file.Name()))...)
+			continue
+		}
+		paths = append(paths, filepath.Join(dir, file.Name()))
+	}
+	return paths
+}
+
+func grep(filePath, text string) []string {
+
+	model := []string{}
+	file, err := os.Open(filePath)
 	if err != nil {
 		// Openエラー処理
 	}
@@ -106,22 +157,5 @@ func (mw *MyMainWindow) clicked() {
 	if !hit {
 		model = append(model, "0件でした")
 	}
-	mw.results.SetModel(model)
-}
-
-func (mw *MyMainWindow) openFolderClicked() {
-	dlg := new(walk.FileDialog)
-	dlg.FilePath = mw.path
-	dlg.Title = "Select File"
-	dlg.Filter = "Exe files All files (*.*)|*.*"
-
-	if ok, err := dlg.ShowOpen(mw); err != nil {
-		//if ok, err := dlg.ShowBrowseFolder(mw); err != nil {
-		return
-	} else if !ok {
-		return
-	}
-	mw.path = dlg.FilePath
-	mw.searchFolder.SetText(mw.path)
-	return
+	return model
 }
