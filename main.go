@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -64,14 +65,27 @@ func main() {
 				},
 			},
 			ListBox{
-				AssignTo: &mw.results,
-				Row:      5,
+				AssignTo:        &mw.results,
+				Row:             5,
+				OnItemActivated: mw.mouseDown,
 			},
 		},
 		OnDropFiles: mw.dropedFileEvent,
 	}.Run()); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (mw *MyMainWindow) mouseDown() {
+	text := mw.results.Model()
+
+	selectStr := text.([]string)[mw.results.CurrentIndex()]
+	splitStr := strings.Split(selectStr, " ")
+	if len(splitStr) <= 1 {
+		return
+	}
+	err := exec.Command("explorer", splitStr[1]).Start()
+	fmt.Println(err)
 }
 
 func (mw *MyMainWindow) dropedFileEvent(handle []string) {
@@ -94,6 +108,7 @@ func (mw *MyMainWindow) clicked() {
 	} else {
 		model = grep(mw.path, text)
 	}
+	fmt.Println(model)
 
 	mw.results.SetModel(model)
 }
@@ -150,12 +165,12 @@ func grep(filePath, text string) []string {
 		}
 		res := strings.Index(sc.Text(), text)
 		if res != -1 {
-			model = append(model, fmt.Sprintf("%04d行目  %v", i, sc.Text()))
+			model = append(model, fmt.Sprintf("%04d行目: %v", i, filePath))
 			hit = true
 		}
 	}
 	if !hit {
-		model = append(model, "0件でした")
+		model = append(model, fmt.Sprintf("0件でした(%v)", filePath))
 	}
 	return model
 }
